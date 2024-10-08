@@ -40,16 +40,17 @@ async def upload_file(file: UploadFile = File(...)):
     #print(columns)
     # Step 4: Dynamically create the SQLite table based on the Excel columns
     # Form a SQL CREATE TABLE statement dynamically
-    columns_list = []
+    sql_columns_list = []
     for column in columns:
         column = column.replace(" ", "_").upper()
         if column.upper().find('DATE')>-1:
-            columns_list.append(f"'{column}' DATE")
+            sql_columns_list.append(f"'{column}' DATE")
             
         else:
-            columns_list.append(f"'{column}' TEXT")
-            
-    df.columns = columns_list 
+            sql_columns_list.append(f"'{column}' TEXT")
+         
+    columns_list = [column.upper().replace(" ","_")for column in df.columns.values.tolist()]
+    df.columns = columns_list
     
     api_columns = []
     column_index=0
@@ -65,7 +66,7 @@ async def upload_file(file: UploadFile = File(...)):
     # Convert the DataFrame to JSON
     df_split = df.to_dict(orient="split")
     data_json = df_split['data']
-    data_json.insert(0,columns_list)
+    #data_json.insert(0,columns_list)
     print(data_json)
     return JSONResponse(content={"message": "File uploaded successfully", 
                                  "filename": file.filename,
