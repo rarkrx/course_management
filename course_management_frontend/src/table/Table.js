@@ -10,7 +10,6 @@ import { Button, PageButton } from "../reusable/Button";
 import CsvDownload from "react-json-to-csv";
 import { Helmet } from "react-helmet";
 import { exportToJson } from "../modules/misc";
-
 const GlobalFilter = ({
   preGlobalFilteredRows,
   globalFilter,
