@@ -5,6 +5,7 @@ import shutil
 import os
 import uvicorn
 import pandas as pd
+import sqlite3
 
 app = FastAPI()
 origins = [
@@ -19,6 +20,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+conn = sqlite3.connect('database.db')
+cursor = conn.cursor()
 
 # Directory where files will be saved
 UPLOAD_DIRECTORY = "./uploads/"
@@ -53,6 +57,13 @@ async def upload_file(file: UploadFile = File(...)):
     columns_list = [column.upper().replace(" ","_")for column in df.columns.values.tolist()]
     df.columns = columns_list
     
+    create_table_query = f"CREATE TABLE IF NOT EXISTS my_table ({', '.join(sql_columns_list)})"
+    print("Query:",create_table_query)
+    cursor.execute(create_table_query)
+    conn.commit()
+    
+    df.to_sql('my_table', conn, if_exists='append', index=False)
+    
     api_columns = []
     column_index=0
     for column_name in df.columns.values.tolist():
@@ -74,6 +85,45 @@ async def upload_file(file: UploadFile = File(...)):
                                  "data" : data_json,
                                  "columns" : api_columns,
                                  })
+
+@app.post("/upload-new-users")
+async def upload_new_users_file(file: UploadFile = File(...)):
+    file_location = f"{UPLOAD_DIRECTORY}{file.filename}"
+    
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    # Read the Excel file into a pandas DataFrame
+    new_df = pd.read_excel(file_location)
+    new_df = new_df.fillna('')
+
+
+    if df != []:
+        df = pd.concat([df, new_df], axis=1)
+        
+        api_columns = []
+        column_index=0
+    
+        for column_name in df.columns.values.tolist():
+            api_columns.append(
+                {
+                    "Header": column_name,
+                    "accessor": f"{column_index}"
+                }
+            )
+            column_index += 1
+        # Convert the DataFrame to JSON
+        df_split = df.to_dict(orient="split")
+        data_json = df_split['data']
+        #data_json.insert(0,columns_list)
+        print(data_json)
+        return JSONResponse(content={"message": "File uploaded successfully", 
+                                        "filename": file.filename,
+                                        "data" : data_json,
+                                        "columns" : api_columns,
+                                        })
+    
+
 
 if __name__ == '__main__':
     uvicorn.run("app:app", port=5000, reload=True, access_log=False)

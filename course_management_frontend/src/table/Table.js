@@ -45,7 +45,7 @@ const GlobalFilter = ({
   );
 };
 
-const Table = ({ columns, data, completeData, query }) => {
+const Table = ({ columns, data,previousData, completeData, query }) => {
   const {
     getTableProps,
     getTableBodyProps,
