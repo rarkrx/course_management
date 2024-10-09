@@ -172,13 +172,47 @@ const FileUpload = () => {
             "
               onChange={handleInitalFileChange}
             />
-
+            <div>
             <button
               type="submit"
-              className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transition"
+              className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transition m-2"
             >
               Upload & Process File
             </button>
+            <button
+            type="button"
+            className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transitionm-2"
+            onClick={async (e)=>{
+                e.preventDefault();
+            
+                const formData = new FormData();
+                formData.append("file", initalfile);
+            
+                try {
+                  const response = await axios.get(
+                    "http://127.0.0.1:5000/dbdata",
+                    formData,
+                    {
+                      headers: {
+                        "Content-Type": "multipart/form-data",
+                      },
+                    }
+                  );
+                  console.log(response);
+                  // Set table columns and data
+                  setColumns(response.data.columns);
+                  setTableData(response.data.data);
+                  setMessage(response.data.message);
+                } catch (error) {
+                  console.error("Error uploading file:", error);
+                  setMessage("Failed to upload file");
+                
+              };
+            }}
+            >
+              Use Database Data
+            </button>
+            </div>
           </form>
 
           {/* Message */}

@@ -62,8 +62,8 @@ async def upload_file(file: UploadFile = File(...)):
     cursor.execute(create_table_query)
     conn.commit()
     
-    df.to_sql('my_table', conn, if_exists='append', index=False)
-    
+    df.to_sql('my_table', conn, if_exists='replace', index=False)
+
     api_columns = []
     column_index=0
     for column_name in df.columns.values.tolist():
@@ -123,7 +123,37 @@ async def upload_new_users_file(file: UploadFile = File(...)):
                                         "columns" : api_columns,
                                         })
     
+@app.get("/dbdata")
+async def get_db_data():
+    cursor.execute('SELECT c.name FROM pragma_table_info("my_table") c;') 
+    rows = cursor.fetchall()
+    columns = [n[0] for n in rows]
+    
+    api_columns = []
+    column_index=0
 
+    for column_name in columns:
+        api_columns.append(
+            {
+                "Header": column_name,
+                "accessor": f"{column_index}"
+            }
+        )
+        column_index += 1
+        
+    cursor.execute('SELECT * FROM my_table')
+    rows = cursor.fetchall()
+    df = pd.DataFrame(rows)
+    # Convert the DataFrame to JSON
+    df_split = df.to_dict(orient="split")
+    data_json = df_split['data']
+    #data_json.insert(0,columns_list)
+    print(data_json)
+    return JSONResponse(content={"message": "File uploaded successfully", 
+                                 "filename": "Database",
+                                 "data" : data_json,
+                                 "columns" : api_columns,
+                                 })
 
 if __name__ == '__main__':
     uvicorn.run("app:app", port=5000, reload=True, access_log=False)
