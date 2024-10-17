@@ -45,11 +45,11 @@ const FileUpload = () => {
     }
   };
 
-  const handleOtherFileChange = (e) => {
+  const handleOtherFilesChange = (e) => {
     setOtherFile(e.target.files[0]);
   };
 
-  const handleOtherFileUpload = async (e,functiontype) => {
+  const handleOtherFilesUpload = async (e, functiontype) => {
     e.preventDefault();
 
     const formData = new FormData();
@@ -74,7 +74,51 @@ const FileUpload = () => {
       console.error("Error uploading file:", error);
       setMessage("Failed to upload file");
     }
-  }
+  };
+
+  const handlePopupTrigger = (e) => {
+    if (tableData.length === 0) {
+      e.preventDefault(); // Prevent the popup from opening
+      alert("Error: No data available in the table."); // Show error message
+    }
+  };
+
+  let ModalFileUpload = () => {
+    return (
+      <div className="modal">
+        <span> Modal content </span>
+        <form
+          onSubmit={(e) => {
+            handleOtherFilesUpload(e, "upload-new-users");
+          }}
+          className="flex flex-col md:flex-row gap-4 items-center justify-between"
+        >
+          <input
+            type="file"
+            className="block md:w-auto text-sm
+file:mr-4 file:py-2 file:px-4
+file:rounded-md file:border-0
+file:text-sm file:font-semibold
+file:bg-primary-dark 
+hover:file:bg-secondary-dark
+"
+            onChange={handleOtherFilesChange}
+          />
+
+          <button
+            type="submit"
+            className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transition"
+            /* onClick={() => {
+      console.log("modal closed ");
+      close();
+    }} */
+          >
+            Upload & Process File
+          </button>
+        </form>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -103,48 +147,30 @@ const FileUpload = () => {
           }
           modal
         >
-          <span> Modal content </span>
+          {tableData.length === 0 ? (
+            <span>Please Upload a file First</span>
+          ) : (
+            <ModalFileUpload/>
+          )}
         </Popup>
 
         <Popup
-          trigger={<button className="px-3 py-2 bg-secondary-dark hover:bg-gray-600 text-white font-bold rounded-md w-full text-center mb-4"> Open Modal </button>}
+          trigger={
+            <button className="px-3 py-2 bg-secondary-dark hover:bg-gray-600 text-white font-bold rounded-md w-full text-center mb-4">
+              {" "}
+              Open Modal{" "}
+            </button>
+          }
           modal
           nested
         >
-          {(close) => (
-            <div className="modal">
-              <span> Modal content </span>
-              <form
-                onSubmit={(e) =>{
-                  handleOtherFileUpload(e,"upload-new-users")
-                }}
-                className="flex flex-col md:flex-row gap-4 items-center justify-between"
-              >
-                <input
-                  type="file"
-                  className="block md:w-auto text-sm
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-md file:border-0
-              file:text-sm file:font-semibold
-              file:bg-primary-dark 
-              hover:file:bg-secondary-dark
-            "
-                  onChange={handleOtherFileChange}
-                />
-
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transition"
-                  /* onClick={() => {
-                    console.log("modal closed ");
-                    close();
-                  }} */
-                > 
-                  Upload & Process File
-                </button>
-              </form>
-            </div>
-          )}
+          {(close) => {
+            tableData.length === 0 ? (
+              <span>Please upload a file</span>
+            ) : (
+              <ModalFileUpload/>
+            );
+          }}
         </Popup>
       </Menu>
 
@@ -156,8 +182,8 @@ const FileUpload = () => {
 
           {/* File Upload Form */}
           <form
-            onSubmit={(e) =>{
-              handleInitalFileUpload(e)
+            onSubmit={(e) => {
+              handleInitalFileUpload(e);
             }}
             className="flex flex-col md:flex-row gap-4 items-center justify-between"
           >
@@ -173,45 +199,49 @@ const FileUpload = () => {
               onChange={handleInitalFileChange}
             />
             <div>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transition m-2"
-            >
-              Upload & Process File
-            </button>
-            <button
-            type="button"
-            className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transitionm-2"
-            onClick={async (e)=>{
-                e.preventDefault();
-            
-                const formData = new FormData();
-                formData.append("file", initalfile);
-            
-                try {
-                  const response = await axios.get(
-                    "http://127.0.0.1:5000/dbdata",
-                    formData,
-                    {
-                      headers: {
-                        "Content-Type": "multipart/form-data",
-                      },
+              <button
+                type="submit"
+                className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transition m-2"
+              >
+                Upload & Process File
+              </button>
+              <button
+                type="button"
+                className="px-6 py-2 bg-primary-dark text-white font-semibold rounded-md shadow-lg hover:bg-secondary-dark transition m-2"
+                onClick={async (e) => {
+                  e.preventDefault();
+
+                  const formData = new FormData();
+                  formData.append("file", initalfile);
+
+                  try {
+                    const response = await axios.get(
+                      "http://127.0.0.1:5000/dbdata",
+                      formData,
+                      {
+                        headers: {
+                          "Content-Type": "multipart/form-data",
+                        },
+                      }
+                    );
+                    console.log(response);
+                    // Set table columns and data
+                    setColumns(response.data.columns);
+                    setTableData(response.data.data);
+                    setMessage(response.data.message);
+                  } catch (error) {
+                    console.error("Error uploading file:", error);
+
+                    if (error.message.includes("no such table")) {
+                      setMessage("No data found");
+                    } else {
+                      setMessage(error.message);
                     }
-                  );
-                  console.log(response);
-                  // Set table columns and data
-                  setColumns(response.data.columns);
-                  setTableData(response.data.data);
-                  setMessage(response.data.message);
-                } catch (error) {
-                  console.error("Error uploading file:", error);
-                  setMessage("Failed to upload file");
-                
-              };
-            }}
-            >
-              Use Database Data
-            </button>
+                  }
+                }}
+              >
+                Use Database Data
+              </button>
             </div>
           </form>
 
